@@ -10,6 +10,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+// --- ADD THESE TWO IMPORTS ---
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -20,6 +24,9 @@ public class User implements UserDetails {
     private String name;
     private String email;
     private String password;
+
+    // --- ADD THE ANNOTATION HERE ---
+    @Enumerated(EnumType.STRING)
     private UserRole userRole;
 
     @Override

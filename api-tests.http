@@ -68,8 +68,8 @@ POST https://pawpal-api.onrender.com/api/auth/signup
 Content-Type: application/json
 
 {
-    "name": "Live Test User",
-    "email": "live-user@example.com",
+    "name": "Live Test User 2",
+    "email": "live-user-2@example.com",  
     "password": "password123"
 }
 
@@ -81,7 +81,7 @@ POST https://pawpal-api.onrender.com/api/auth/login
 Content-Type: application/json
 
 {
-    "username": "live-user@example.com",
+    "username": "live-user-2@example.com", 
     "password": "password123"
 }
 @liveUserToken = {{liveUserLogin.response.body.jwtToken}}
