@@ -1,10 +1,10 @@
-### =======================================================
-### FLOW 1: ADMIN - Login and check initial state
-### =======================================================
+### =====================================================================
+### SECTION 1: LOCAL DEVELOPMENT TESTS (Server running on localhost:8080)
+### =====================================================================
 
-### 1. ADMIN LOGIN
-# We log in as the default admin to get a token.
-# @name adminLogin
+### 1. LOCAL - ADMIN LOGIN
+# We log in as the default admin to get a token for local testing.
+# @name localAdminLogin
 POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
@@ -12,116 +12,82 @@ Content-Type: application/json
     "username": "admin@pawpal.com",
     "password": "admin"
 }
-
-### Store the admin token in a variable for all future admin requests
-@adminToken = {{adminLogin.response.body.jwtToken}}
+@localAdminToken = {{localAdminLogin.response.body.jwtToken}}
 
 
-### 2. ADMIN - GET ALL PETS (Initially Empty)
-# We check the pet list. It should be an empty array [] at the start.
-GET http://localhost:8080/api/admin/pets
-Authorization: Bearer {{adminToken}}
-
-
-### =======================================================
-### FLOW 2: USER - Sign up and log in
-### =======================================================
-
-### 3. USER SIGNUP
-# We create a new user account.
+### 2. LOCAL - USER SIGNUP
 POST http://localhost:8080/api/auth/signup
 Content-Type: application/json
 
 {
-    "name": "Maria Rodriguez",
-    "email": "maria@example.com",
+    "name": "Local Test User",
+    "email": "local-user@example.com",
     "password": "password123"
 }
 
 
-### 4. USER LOGIN
-# We log in as the new user to get their token and ID.
-# @name userLogin
+### 3. LOCAL - USER LOGIN
+# We log in as the new local user to get their token and ID.
+# @name localUserLogin
 POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
 {
-    "username": "maria@example.com",
+    "username": "local-user@example.com",
     "password": "password123"
 }
+@localUserToken = {{localUserLogin.response.body.jwtToken}}
+@localUserId = {{localUserLogin.response.body.userId}}
 
-### Store the user's token and ID in variables for all future user requests
-@userToken = {{userLogin.response.body.jwtToken}}
-@userId = {{userLogin.response.body.userId}}
-
-
-### =======================================================
-### FLOW 3: ADMIN - Add Pets to the Platform
-### =======================================================
-
-# NOTE: Adding pets requires uploading an image (multipart/form-data).
-# This is difficult to do in the REST Client extension.
-#
-# ACTION: For this one step, we will use the H2 Database Console.
-# This is a temporary workaround to add data without needing Postman.
+# NOTE: For a full local test, you would use the H2 console to add pets,
+# then run the adoption request flow using the local endpoints and tokens.
+# The flows below are for the live server.
 
 
-### =======================================================
-### FLOW 4: USER - Browse and Request a Pet
-### =======================================================
+### =====================================================================
+### SECTION 2: LIVE PRODUCTION SERVER VERIFICATION (https://pawpal-api.onrender.com)
+### =====================================================================
 
-### 5. USER - VIEW AVAILABLE PETS
-# Now we check the pet list again. It should contain the pets we added.
-GET http://localhost:8080/api/user/pets
-Authorization: Bearer {{userToken}}
-
-
-### 6. USER - REQUEST ADOPTION
-# Maria requests to adopt the pet with ID = 1.
-POST http://localhost:8080/api/user/request-adoption
-Authorization: Bearer {{userToken}}
+### A. LIVE - ADMIN LOGIN (Health Check)
+# Proves the live server is online and the admin account exists.
+# @name liveAdminLogin
+POST https://pawpal-api.onrender.com/api/auth/login
 Content-Type: application/json
 
 {
-    "userId": {{userId}},
-    "petId": 1
+    "username": "admin@pawpal.com",
+    "password": "admin"
+}
+@liveAdminToken = {{liveAdminLogin.response.body.jwtToken}}
+
+
+### B. LIVE - CREATE A NEW USER
+# Proves: The live server can WRITE to the persistent Neon database.
+# @name liveUserSignup
+POST https://pawpal-api.onrender.com/api/auth/signup
+Content-Type: application/json
+
+{
+    "name": "Live Test User",
+    "email": "live-user@example.com",
+    "password": "password123"
 }
 
 
-### 7. USER - CHECK MY REQUESTS
-# Maria checks the status of her adoption requests.
-GET http://localhost:8080/api/user/my-requests/{{userId}}
-Authorization: Bearer {{userToken}}
+### C. LIVE - LOGIN AS THE NEW USER
+# Proves: The new user was saved correctly and can be READ from the database.
+# @name liveUserLogin
+POST https://pawpal-api.onrender.com/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "live-user@example.com",
+    "password": "password123"
+}
+@liveUserToken = {{liveUserLogin.response.body.jwtToken}}
 
 
-### =======================================================
-### FLOW 5: ADMIN - Manage Adoption Requests
-### =======================================================
-
-### 8. ADMIN - VIEW ALL ADOPTION REQUESTS
-# The admin logs in and checks all pending requests.
-GET http://localhost:8080/api/admin/adoption-requests
-Authorization: Bearer {{adminToken}}
-
-
-### 9. ADMIN - APPROVE THE REQUEST
-# The admin approves Maria's request for the pet with request ID = 1.
-# (Note: Request ID and Pet ID might be the same for the first request)
-GET http://localhost:8080/api/admin/adoption-request/1/Approve
-Authorization: Bearer {{adminToken}}
-
-
-### =======================================================
-### FLOW 6: FINAL CHECKS
-### =======================================================
-
-### 10. USER - VIEW AVAILABLE PETS AGAIN
-# The adopted pet (ID=1) should no longer appear in the list of available pets.
-GET http://localhost:8080/api/user/pets
-Authorization: Bearer {{userToken}}
-
-
-### 11. ADMIN - GET ALL PETS AGAIN
-# The admin can see the pet with ID=1, but its status should now be "ADOPTED".
-GET http://localhost:8080/api/admin/pets
-Authorization: Bearer {{adminToken}}
+### D. LIVE - ACCESS A PROTECTED USER ROUTE
+# Proves: JWT security and role-based access are fully working on the live server.
+GET https://pawpal-api.onrender.com/api/user/pets
+Authorization: Bearer {{liveUserToken}}
