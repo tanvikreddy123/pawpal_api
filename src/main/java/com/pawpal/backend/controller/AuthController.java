@@ -7,7 +7,6 @@ import com.pawpal.backend.dto.UserDto;
 import com.pawpal.backend.entity.User;
 import com.pawpal.backend.repository.UserRepository;
 import com.pawpal.backend.service.auth.AuthService;
-import com.pawpal.backend.service.jwt.UserService;
 import com.pawpal.backend.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,13 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -30,7 +26,6 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthenticationManager authenticationManager;
-    private final UserService userService;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
@@ -52,16 +47,16 @@ public class AuthController {
             throw new BadCredentialsException("Incorrect username or password");
         }
 
-        final UserDetails userDetails = userService.userDetailsService().loadUserByUsername(authenticationRequest.getUsername());
-        Optional<User> optionalUser = userRepository.findFirstByEmail(userDetails.getUsername());
-        final String jwt = jwtUtil.generateToken(userDetails.getUsername());
+        final User user = userRepository.findFirstByEmail(authenticationRequest.getUsername())
+                .orElseThrow(() -> new BadCredentialsException("User not found with email: " + authenticationRequest.getUsername()));
+
+        final String jwt = jwtUtil.generateToken(user); // Pass the full User object
 
         AuthenticationResponse response = new AuthenticationResponse();
-        if (optionalUser.isPresent()) {
-            response.setJwtToken(jwt);
-            response.setUserId(optionalUser.get().getId());
-            response.setUserRole(optionalUser.get().getUserRole());
-        }
+        response.setJwtToken(jwt);
+        response.setUserId(user.getId());
+        response.setUserRole(user.getUserRole());
+
         return response;
     }
 }
